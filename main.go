@@ -44,14 +44,22 @@ func parseArgs() Arguments {
 	}
 }
 
+func getFilePath(fileName string) (string, error) {
+	path, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	fPath := filepath.Join(path, fileName)
+	return fPath, nil
+}
+
 func List(fileName string, writer io.Writer) error {
 	// get file from current dir on Windows
-	path, err := os.Getwd()
+	path, err := getFilePath(fileName)
 	if err != nil {
 		return err
 	}
-	fPath := filepath.Join(path, fileName)
-	f, err := os.Open(fPath)
+	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
