@@ -59,7 +59,7 @@ func List(fileName string, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.Open(path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err
 	}
@@ -76,9 +76,9 @@ func List(fileName string, writer io.Writer) error {
 	return nil
 }
 
-func Add() error {
-	return nil
-}
+// func Add(fileName, user string, writer io.Writer) error {
+// 	return nil
+// }
 
 func Perform(args Arguments, writer io.Writer) error {
 	if args["operation"] == "" {
@@ -90,8 +90,8 @@ func Perform(args Arguments, writer io.Writer) error {
 	switch {
 	case args["operation"] == "list":
 		return List(args["filename"], writer)
-	case args["operation"] == "add":
-		return Add()
+	// case args["operation"] == "add":
+	// 	return Add()
 	default:
 		return fmt.Errorf("Operation %s not allowed!", args["operation"])
 	}
