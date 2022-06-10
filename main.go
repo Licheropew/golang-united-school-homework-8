@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -10,27 +11,22 @@ import (
 
 type Arguments map[string]string
 
-// type User struct {
-// 	ID    string `json: "id"`
-// 	Email string `json: "email"`
-// 	Age   int    `json: "age"`
-// }
+type User struct {
+	Id    string `json:"id"`
+	Email string `json:"email"`
+	Age   int    `json:"age"`
+}
 
 var (
 	operationFlag string
 	fileNameFlag  string
-	userData      string
 	userId        string
-	// parsedUser    User
+	itemFlag      string
 )
 
 func init() {
 	flag.StringVar(&operationFlag, "operation", "", "operation to perform")
-	flag.Func("item", "User items", func(s string) error {
-		//err := json.Unmarshal([]byte(s), &parsedUser)
-		userData = s
-		return nil
-	})
+	flag.StringVar(&itemFlag, "item", "", "User items")
 	flag.StringVar(&fileNameFlag, "fileName", "", "name of the file")
 	flag.Int(userId, 0, "id to search")
 }
@@ -38,10 +34,18 @@ func init() {
 func parseArgs() Arguments {
 	flag.Parse()
 	return Arguments{
+		"id":        userId,
 		"operation": operationFlag,
-		"filename":  fileNameFlag,
-		"user":      userData,
+		"fileName":  fileNameFlag,
+		"item":      itemFlag,
 	}
+}
+
+func checkItem(item string) error {
+	if item == "" {
+		return fmt.Errorf("-item flag has to be specified")
+	}
+	return nil
 }
 
 func getFilePath(fileName string) (string, error) {
@@ -59,39 +63,85 @@ func List(fileName string, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 	data := make([]byte, 2048)
-	_, err = f.Read(data)
+	n, err := f.Read(data)
 	if err != nil {
-		return err
+		if err != io.EOF {
+			return err
+		}
 	}
-	_, err = writer.Write(data)
+	_, err = writer.Write(data[:n])
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// func Add(fileName, user string, writer io.Writer) error {
-// 	return nil
-// }
+func Add(args Arguments, writer io.Writer) error {
+	checkItemFlag := checkItem(args["item"])
+	var u User
+	var users []User
+	if checkItemFlag != nil {
+		return checkItemFlag
+	}
+	path, err := getFilePath(args["fileName"])
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	data := make([]byte, 2048)
+	n, err := f.Read(data)
+
+	if err != nil {
+		if err != io.EOF {
+			return err
+		}
+	}
+
+	json.Unmarshal([]byte(data[:n]), &users)
+	json.Unmarshal([]byte(args["item"]), &u)
+
+	for _, user := range users {
+		if user.Id == u.Id {
+			return fmt.Errorf("Item with id %v already exists", u.Id)
+		}
+	}
+	if u.Id != "" {
+		users = append(users, u)
+		res, err := json.Marshal(users)
+		if err != nil {
+			return err
+		}
+		_, err = f.WriteAt(res, 0)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
 
 func Perform(args Arguments, writer io.Writer) error {
 	if args["operation"] == "" {
 		return fmt.Errorf("-operation flag has to be specified")
 	}
-	if args["filename"] == "" {
+	if args["fileName"] == "" {
 		return fmt.Errorf("-fileName flag has to be specified")
 	}
-	switch {
-	case args["operation"] == "list":
-		return List(args["filename"], writer)
-	// case args["operation"] == "add":
-	// 	return Add()
+	switch args["operation"] {
+	case "list":
+		return List(args["fileName"], writer)
+	case "add":
+		return Add(args, writer)
 	default:
 		return fmt.Errorf("Operation %s not allowed!", args["operation"])
 	}
