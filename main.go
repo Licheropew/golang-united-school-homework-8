@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 type Arguments map[string]string
@@ -32,15 +33,36 @@ func init() {
 	})
 	flag.StringVar(&fileNameFlag, "fileName", "", "name of the file")
 	flag.Int(userId, 0, "id to search")
-
+	flag.Parse()
 }
 
 func parseArgs() Arguments {
 	return Arguments{
 		"operation": operationFlag,
-		"fileName":  fileNameFlag,
+		"filename":  fileNameFlag,
 		"user":      userData,
 	}
+}
+
+func List(fileName string) error {
+	// get file from current dir on Windows
+	path, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	fPath := filepath.Join(path, fileName)
+	f, err := os.Open(fPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	data := make([]byte, 2048)
+	_, err = f.Read(data)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(data))
+	return nil
 }
 
 func Add() error {
@@ -51,10 +73,12 @@ func Perform(args Arguments, writer io.Writer) error {
 	if args["operation"] == "" {
 		return fmt.Errorf("-operation flag has to be specified")
 	}
-	if args["fileName"] == "" {
+	if args["filename"] == "" {
 		return fmt.Errorf("-fileName flag has to be specified")
 	}
 	switch {
+	case args["operation"] == "list":
+		return List(args["filename"])
 	case args["operation"] == "add":
 		return Add()
 	default:
