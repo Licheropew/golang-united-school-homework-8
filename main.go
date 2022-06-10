@@ -33,10 +33,10 @@ func init() {
 	})
 	flag.StringVar(&fileNameFlag, "fileName", "", "name of the file")
 	flag.Int(userId, 0, "id to search")
-	flag.Parse()
 }
 
 func parseArgs() Arguments {
+	flag.Parse()
 	return Arguments{
 		"operation": operationFlag,
 		"filename":  fileNameFlag,
