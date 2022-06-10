@@ -44,7 +44,7 @@ func parseArgs() Arguments {
 	}
 }
 
-func List(fileName string) error {
+func List(fileName string, writer io.Writer) error {
 	// get file from current dir on Windows
 	path, err := os.Getwd()
 	if err != nil {
@@ -61,7 +61,10 @@ func List(fileName string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(data))
+	_, err = writer.Write(data)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -78,7 +81,7 @@ func Perform(args Arguments, writer io.Writer) error {
 	}
 	switch {
 	case args["operation"] == "list":
-		return List(args["filename"])
+		return List(args["filename"], writer)
 	case args["operation"] == "add":
 		return Add()
 	default:
