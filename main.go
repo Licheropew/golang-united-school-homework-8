@@ -67,8 +67,8 @@ func getFilePath(fileName string) (string, error) {
 	return fPath, nil
 }
 
-func List(fileName string, writer io.Writer) error {
-	path, err := getFilePath(fileName)
+func List(args Arguments, writer io.Writer) error {
+	path, err := getFilePath(args["fileName"])
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func Add(args Arguments, writer io.Writer) error {
 		if err != nil {
 			return err
 		}
-		outfile, _ := os.OpenFile(path, os.O_RDONLY|os.O_TRUNC, permissionF)
+		outfile, _ := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, permissionF)
 		defer outfile.Close()
 		_, err = outfile.Write(res)
 		if err != nil {
@@ -250,7 +250,7 @@ func Perform(args Arguments, writer io.Writer) error {
 	}
 	switch args["operation"] {
 	case "list":
-		return List(args["fileName"], writer)
+		return List(args, writer)
 	case "add":
 		return Add(args, writer)
 	case "remove":
