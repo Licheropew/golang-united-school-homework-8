@@ -24,37 +24,36 @@ type User struct {
 var (
 	operationFlag string
 	fileNameFlag  string
-	userId        string
+	userIdFlag    string
 	itemFlag      string
+	tempUser      User
+	users         []User
 )
 
 func init() {
-	flag.StringVar(&operationFlag, "operation", "", "operation to perform")
-	flag.StringVar(&itemFlag, "item", "", "User items")
-	flag.StringVar(&fileNameFlag, "fileName", "", "name of the file")
-	flag.Int(userId, 0, "id to search")
+	flag.StringVar(&operationFlag, "operation", "", "Must take operation to perform")
+	flag.StringVar(&itemFlag, "item", "", "Must take user information")
+	flag.StringVar(&fileNameFlag, "fileName", "", "Must take name of the file")
+	flag.StringVar(&userIdFlag, "id", "", "Must take id to search")
 }
 
 func parseArgs() Arguments {
 	flag.Parse()
 	return Arguments{
-		"id":        userId,
+		"id":        userIdFlag,
 		"operation": operationFlag,
 		"fileName":  fileNameFlag,
 		"item":      itemFlag,
 	}
 }
 
-func checkItem(item string) error {
+func checkFlags(item, operation string) error {
 	if item == "" {
-		return fmt.Errorf("-item flag has to be specified")
-	}
-	return nil
-}
-
-func checkId(id int) error {
-	if id == 0 {
-		return fmt.Errorf("-id flag has to be specified")
+		if operation == "add" {
+			return fmt.Errorf("-item flag has to be specified")
+		} else if operation == "remove" {
+			return fmt.Errorf("-id flag has to be specified")
+		}
 	}
 	return nil
 }
@@ -94,9 +93,7 @@ func List(fileName string, writer io.Writer) error {
 }
 
 func Add(args Arguments, writer io.Writer) error {
-	checkItemFlag := checkItem(args["item"])
-	var u User
-	var users []User
+	checkItemFlag := checkFlags(args["item"], args["operation"])
 	if checkItemFlag != nil {
 		return checkItemFlag
 	}
@@ -119,15 +116,64 @@ func Add(args Arguments, writer io.Writer) error {
 	}
 
 	json.Unmarshal([]byte(data[:n]), &users)
-	json.Unmarshal([]byte(args["item"]), &u)
+	json.Unmarshal([]byte(args["item"]), &tempUser)
 
 	for _, user := range users {
-		if user.Id == u.Id {
-			fmt.Fprintf(writer, "Item with id %s already exists", u.Id)
+		if user.Id == tempUser.Id {
+			fmt.Fprintf(writer, "Item with id %s already exists", tempUser.Id)
 		}
 	}
-	if u.Id != "" {
-		users = append(users, u)
+	if tempUser.Id != "" {
+		users = append(users, tempUser)
+		res, err := json.Marshal(users)
+		if err != nil {
+			return err
+		}
+		_, err = f.WriteAt(res, 0)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func RemoveById(args Arguments, writer io.Writer) error {
+	checkIdFlag := checkFlags(args["id"], args["operation"])
+	if checkIdFlag != nil {
+		return checkIdFlag
+	}
+	path, err := getFilePath(args["fileName"])
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, permissionF)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	data := make([]byte, 2048)
+	n, err := f.Read(data)
+
+	if err != nil {
+		if err != io.EOF {
+			return err
+		}
+	}
+
+	json.Unmarshal([]byte(data[:n]), &users)
+
+	removeFlag := 0
+
+	for i, user := range users {
+		if user.Id == args["id"] {
+			users = append(users[:i], users[i+1:]...)
+			removeFlag = 1
+		}
+	}
+	if removeFlag == 0 {
+		fmt.Fprintf(writer, "Item with id %s not found", args["id"])
+	} else {
 		res, err := json.Marshal(users)
 		if err != nil {
 			return err
@@ -153,6 +199,8 @@ func Perform(args Arguments, writer io.Writer) error {
 		return List(args["fileName"], writer)
 	case "add":
 		return Add(args, writer)
+	case "remove":
+		return
 	default:
 		return fmt.Errorf("Operation %s not allowed!", args["operation"])
 	}
