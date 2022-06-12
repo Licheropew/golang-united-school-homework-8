@@ -104,6 +104,7 @@ func TestListOperation(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	defer file.Close()
 
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
@@ -196,7 +197,6 @@ func TestAddingOperation(t *testing.T) {
 
 	file, err := os.OpenFile(fileName, os.O_RDONLY, filePermission)
 	defer file.Close()
-
 	if err != nil {
 		t.Error(err)
 	}

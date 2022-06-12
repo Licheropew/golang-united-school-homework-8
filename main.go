@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -26,8 +27,6 @@ var (
 	fileNameFlag  string
 	userIdFlag    string
 	itemFlag      string
-	tempUser      User
-	users         []User
 )
 
 func init() {
@@ -95,6 +94,8 @@ func List(args Arguments, writer io.Writer) error {
 
 func Add(args Arguments, writer io.Writer) error {
 	checkItemFlag := checkFlags(args["item"], args["operation"])
+	var tempUser User
+	var users []User
 	if checkItemFlag != nil {
 		return checkItemFlag
 	}
@@ -115,8 +116,9 @@ func Add(args Arguments, writer io.Writer) error {
 			return err
 		}
 	}
-
+	log.Print(users)
 	json.Unmarshal([]byte(data[:n]), &users)
+	log.Print(users)
 	json.Unmarshal([]byte(args["item"]), &tempUser)
 
 	addFlag := 0
@@ -147,6 +149,7 @@ func Add(args Arguments, writer io.Writer) error {
 
 func RemoveById(args Arguments, writer io.Writer) error {
 	checkIdFlag := checkFlags(args["id"], args["operation"])
+	var users []User
 	if checkIdFlag != nil {
 		return checkIdFlag
 	}
@@ -197,6 +200,7 @@ func RemoveById(args Arguments, writer io.Writer) error {
 }
 
 func FindById(args Arguments, writer io.Writer) error {
+	var users []User
 	checkIdFlag := checkFlags(args["id"], args["operation"])
 	if checkIdFlag != nil {
 		return checkIdFlag
