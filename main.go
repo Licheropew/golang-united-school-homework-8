@@ -68,7 +68,6 @@ func getFilePath(fileName string) (string, error) {
 }
 
 func List(fileName string, writer io.Writer) error {
-	// get file from current dir on Windows
 	path, err := getFilePath(fileName)
 	if err != nil {
 		return err
