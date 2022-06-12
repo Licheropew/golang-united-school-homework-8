@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 )
 
+const (
+	permissionF = 0644
+)
+
 type Arguments map[string]string
 
 type User struct {
@@ -48,6 +52,13 @@ func checkItem(item string) error {
 	return nil
 }
 
+func checkId(id int) error {
+	if id == 0 {
+		return fmt.Errorf("-id flag has to be specified")
+	}
+	return nil
+}
+
 func getFilePath(fileName string) (string, error) {
 	path, err := os.Getwd()
 	if err != nil {
@@ -63,7 +74,7 @@ func List(fileName string, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, permissionF)
 	if err != nil {
 		return err
 	}
@@ -93,7 +104,7 @@ func Add(args Arguments, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, permissionF)
 	if err != nil {
 		return err
 	}
@@ -112,7 +123,7 @@ func Add(args Arguments, writer io.Writer) error {
 
 	for _, user := range users {
 		if user.Id == u.Id {
-			return fmt.Errorf("Item with id %v already exists", u.Id)
+			fmt.Fprintf(writer, "Item with id %s already exists", u.Id)
 		}
 	}
 	if u.Id != "" {
