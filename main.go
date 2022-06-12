@@ -65,25 +65,34 @@ func getFilePath(fileName string) (string, error) {
 	return fPath, nil
 }
 
+func openAndReadFile(fileName, path string) ([]byte, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, permissionF)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	data := make([]byte, 2048)
+	n, err := f.Read(data)
+
+	if err != nil {
+		if err != io.EOF {
+			return nil, err
+		}
+	}
+	return data[:n], nil
+}
+
 func List(args Arguments, writer io.Writer) error {
 	path, err := getFilePath(args["fileName"])
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, permissionF)
+	data, err := openAndReadFile(args["fileName"], path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	data := make([]byte, 2048)
-	n, err := f.Read(data)
-	if err != nil {
-		if err != io.EOF {
-			return err
-		}
-	}
-	if n != 0 {
-		_, err = writer.Write(data[:n])
+	if len(data) != 0 {
+		_, err = writer.Write(data)
 		if err != nil {
 			return err
 		}
@@ -102,31 +111,22 @@ func Add(args Arguments, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, permissionF)
+	data, err := openAndReadFile(args["fileName"], path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	data := make([]byte, 2048)
-	n, err := f.Read(data)
 
-	if err != nil {
-		if err != io.EOF {
-			return err
-		}
-	}
-
-	json.Unmarshal([]byte(data[:n]), &users)
+	json.Unmarshal([]byte(data), &users)
 	json.Unmarshal([]byte(args["item"]), &tempUser)
 
-	addFlag := 0
+	addFlag := false
 
 	for _, user := range users {
 		if user.Id == tempUser.Id {
-			addFlag = 1
+			addFlag = true
 		}
 	}
-	if addFlag == 1 {
+	if addFlag {
 		fmt.Fprintf(writer, "Item with id %s already exists", tempUser.Id)
 	} else {
 		users = append(users, tempUser)
@@ -155,31 +155,22 @@ func RemoveById(args Arguments, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, permissionF)
+	data, err := openAndReadFile(args["fileName"], path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	data := make([]byte, 2048)
-	n, err := f.Read(data)
 
-	if err != nil {
-		if err != io.EOF {
-			return err
-		}
-	}
+	json.Unmarshal([]byte(data), &users)
 
-	json.Unmarshal([]byte(data[:n]), &users)
-
-	removeFlag := 0
+	removeFlag := false
 
 	for i, user := range users {
 		if user.Id == args["id"] {
 			users = append(users[:i], users[i+1:]...)
-			removeFlag = 1
+			removeFlag = true
 		}
 	}
-	if removeFlag == 0 {
+	if !removeFlag {
 		fmt.Fprintf(writer, "Item with id %s not found", args["id"])
 	} else {
 		res, err := json.Marshal(users)
@@ -207,31 +198,23 @@ func FindById(args Arguments, writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, permissionF)
+	data, err := openAndReadFile(args["fileName"], path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	data := make([]byte, 2048)
-	n, err := f.Read(data)
 
-	if err != nil {
-		if err != io.EOF {
-			return err
-		}
-	}
+	json.Unmarshal([]byte(data), &users)
 
-	json.Unmarshal([]byte(data[:n]), &users)
-	findIdFlag := 0
+	findIdFlag := false
 	userNum := 0
 
 	for i, user := range users {
 		if user.Id == args["id"] {
-			findIdFlag = 1
+			findIdFlag = true
 			userNum = i
 		}
 	}
-	if findIdFlag == 1 {
+	if findIdFlag {
 		res, err := json.Marshal(users[userNum])
 		if err != nil {
 			return err
