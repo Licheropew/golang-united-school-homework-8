@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -116,9 +115,8 @@ func Add(args Arguments, writer io.Writer) error {
 			return err
 		}
 	}
-	log.Print(users)
+
 	json.Unmarshal([]byte(data[:n]), &users)
-	log.Print(users)
 	json.Unmarshal([]byte(args["item"]), &tempUser)
 
 	addFlag := 0
