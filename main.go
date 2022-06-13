@@ -221,7 +221,7 @@ func FindById(args Arguments, writer io.Writer) error {
 		}
 		writer.Write(res)
 	} else {
-		writer.Write([]byte{})
+		writer.Write(nil)
 	}
 	return nil
 }
